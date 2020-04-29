@@ -4,9 +4,9 @@
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-		<title>Libraries 2.0</title>
+		<title>Musings on language design</title>
 
-		<meta name="author" content="Christian Reitwiessner">
+		<meta name="author" content="Alex Beregszaszi">
 
 		<link rel="stylesheet" href="../../reveal.js-3.9.2/css/reset.css">
 		<link rel="stylesheet" href="../../reveal.js-3.9.2/css/reveal.css">
@@ -107,101 +107,277 @@ body {
         <div id="header-left"></div>
         <div id="header-right"></div>
         <div id="footer-left"><img src="../logo_small.png" width="100"/></div>
-        <div id="footer-center">Open Discussion/<b>Libraries 2.0</b></div>
-        <div id="footer-right">#SoliditySummit</div>
+        <div id="footer-center"></div>
+        <div id="footer-right"><small>#SoliditySummit</small></div>
     </div>
 
 			<div class="slides">
 
 
 <section>
-<div style="position: fixed; top: 50px; left: 0px;">Open Discussion<br/><b>Libraries 2.0</b></div>
+<div style="position: fixed; top: 50px; left: 0px;"><b>Musings on language design</b></div>
 <div style="position: fixed; top: 120px; left: 50%; margin-left: -130px;"><div style="max-height: 399px; overflow: hidden;"><img src="../logo_swarming.gif" height="400"/></div></div>
 <div style="position: fixed; top: 230px; left: 50%; margin-left: -120px; font-size: 130%; transform: rotate(-20deg);">
 <b><span style="background-color: #fce96a;">Solidity</span><br/><div style="padding-top: 20px; padding-left: 70px;"><span style="background-color: #fce96a;">Summit</span></div></b></div>
-<div style="position: fixed; top: 600px; right: -0px;">Christian Reitwiessner</div>
+<div style="position: fixed; top: 600px; right: -0px;"><b>Alex Beregszaszi</b></div>
 </section>
 
 <section data-markdown><script type="text/template">
-### Libraries 2.0
-
- - libraries and especially linked libraries not widely used
- - extend / restrict / completely rework library mechanism?
-
-Goals for this open discussion group:
- - brainstorm usage
- - list potential solutions
-
+### Solidity needs to evolve rapidly
 </script></section>
 
 <section data-markdown><script type="text/template">
-### Current Situation
+### Solidity needs to evolve rapidly
 
-Libraries are
- - external code with known interface
- - at "link-time static" address
- - can modify caller's storage if passed explicit pointer
- - functions can be added to types with ``using A for t``
+And this is useful!
 </script></section>
 
 <section data-markdown><script type="text/template">
-### Current Situation: Example
+### Solidity needs to evolve rapidly
 
-	library L {
-		function sum(uint[] storage self) public returns (uint ret) {
-			for (uint i = 0; i < self.length; ++i) ret += self[i];
-		}
-		function sum(uint[] memory self) internal returns (uint ret) {
-			for (uint i = 0; i < self.length; ++i) ret += self[i];
-		}
+And this is useful!
+
+And this is needed!
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+### Trivia #1
+
+July 2015:
+- 0.1.0 first release (but no build is available)
+
+August 2015:
+- 0.1.1 the oldest on solc-bin
+- 0.1.2 the oldest on the github release page
+
+September 2015:
+- 0.1.3 introduced `throw` statement (who remembers it?)
+</script></section>
+
+<section data-markdown><script type="text/template">
+### Trivia #2
+
+October 2015:
+- 0.1.5 first breaking change in "ABI":
+
+Encode short byte arrays and strings together with their length in storage.
+
+December 2015:
+- 0.2.0 first breaking change in language:
+
+`new ContractName.value(10)()`
+→
+
+`(new ContractName).value(10)()`
+</script></section>
+
+<section data-markdown><script type="text/template">
+### Trivia #3
+
+January 2016:
+- 0.2.1 introduced `imports`
+
+March 2016:
+- 0.3.0 made libraries usable (and reserved the assembly keyword)
+- 0.3.1 introduced inline assembly
+
+May 2016:
+- 0.3.3 inlined `internal` library functions
+</script></section>
+
+<section data-markdown><script type="text/template">
+### Trivia #4
+
+August 2016:
+- 0.3.6 introduced "why3" formal verification backend (long gone)
+
+September 2016:
+- 0.4.0 over 16 breaking changes (safety), version pragma, `payable` keyword
+
+December 2016:
+- 0.4.7 metadata hash!
+</script></section>
+
+<section data-markdown><script type="text/template">
+### Trivia #5
+
+March 2017:
+- 0.4.10 `assert`, `require`, `revert`, `transfer`
+
+May 2017:
+- 0.4.11 interfaces, "standard json interface"
+
+July 2017:
+- 0.4.12 lots of new Yul features
+</script></section>
+
+<section data-markdown><script type="text/template">
+### Trivia #6
+
+August 2017:
+- 0.4.16 SMTChecker, `pure`, `view`, ABIEncodeV2
+
+September 2018:
+- 0.4.25 last regular 0.4 release
+
+November 2018:
+- 0.5.0 monster breaking release (at least 6 months late), over 60 breaking changes
+
+December 2019:
+- 0.6.0 over 30 breaking changes
+</script></section>
+
+<section data-markdown><script type="text/template">
+### Reason 1: Goals have shifted.
+
+Initial goal: friendly language to attract developers.
+
+Meaning:
+- Looking like Javascript
+- Allowing weird things
+- ~~Lacking features~~ Easy to learn
+</script></section>
+
+<section data-markdown><script type="text/template">
+### 2015
+
+```solidity
+function addressToBytes(address _address) internal returns (bytes) {
+	uint160 tmp = uint160(_address);
+	// 40 bytes of space, but actually uses 64 bytes
+	string memory holder = "                                              ";
+	bytes memory ret = bytes(holder);
+	// This is written in an expensive way, as out-of-order array access
+    // is not supported yet, e.g. we cannot go in reverse easily
+    // (or maybe it is a bug: https://github.com/ethereum/solidity/issues/212)
+	uint j = 0;
+	for (uint i = 0; i < 20; i++) {
+		uint _tmp = tmp / (2 ** (8*(19-i))); // shr(tmp, 8*(19-i))
+		uint nb1 = (_tmp / 0x10) & 0x0f;     // shr(tmp, 8) & 0x0f
+		uint nb2 = _tmp & 0x0f;
+		ret[j++] = byte(nibbleToChar(nb1));
+		ret[j++] = byte(nibbleToChar(nb2));
 	}
-	contract C {
-		using L for *;
-		uint[] x;
-		function f() public {
-			uint[] memory a;
-			uint s = a.sum();
-			uint t = x.sum();
-		}
-	}
+	return ret;
+}
+```
 </script></section>
 
 <section data-markdown><script type="text/template">
-### (Maybe) Negative Aspects
+### 2016
 
-- code is not re-used across projects
-- delegatecall is rather expensive?
-- libraries are statically-linked, cannot be upgraded
-- the "using for" mechanism might be dangerous
-- the "inline" modifier is very confusing
+```solidity
+function strConcat(string _a, string _b, string _c, string _d, string _e) internal returns (string) {
+	    bytes memory _ba = bytes(_a);
+	    bytes memory _bb = bytes(_b);
+	    bytes memory _bc = bytes(_c);
+	    bytes memory _bd = bytes(_d);
+	    bytes memory _be = bytes(_e);
+	    string memory abcde = new string(_ba.length + _bb.length + _bc.length + _bd.length + _be.length);
+	    bytes memory babcde = bytes(abcde);
+	    uint k = 0;
+	    for (uint i = 0; i < _ba.length; i++) babcde[k++] = _ba[i];
+	    for (i = 0; i < _bb.length; i++) babcde[k++] = _bb[i];
+	    for (i = 0; i < _bc.length; i++) babcde[k++] = _bc[i];
+	    for (i = 0; i < _bd.length; i++) babcde[k++] = _bd[i];
+	    for (i = 0; i < _be.length; i++) babcde[k++] = _be[i];
+	    return string(babcde);
+}
+```
+
+(Hint: `abi.encodePacked` in 2018)
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### Reason 1: Goals have shifted.
+
+	Current goal: safe(r) language trying to stay friendly.
+
+	Meaning:
+	- Solidity is verbose
+	- Solidity is explicit
+	- Solidity tries to highlight "risky" constructs (gas usage)
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### Reason 2: Ethereum is still learning.
+
+	Protocol and EVM developers are busy coming up with
+	- new features
+	- new restrictions
+	- new repricings
+	- new protocols (Eth 2.0)
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### Reason 3: The ecosystem is still learning.
+
+	Developers are doing all sorts of things.
+
+	Careful balance:
+	- Do not hold their hands too tight
+	- Do not let them run around naked
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### Reason 4: Auditors are still learning.
+
+	It took a few years for the security community to reach a healthy size.
+
+	And to build the necessary tools aiding their work.
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### Reason 5: We are still learning.
+
+	The Solidity community is still figuring out
+	- what features are needed or are bad,
+	- what is good or bad syntax,
+	- what is not enough or too much verbosity,
+	- how to deliver changes quickly to developers,
+	- etc.
+</script></section>
+
+<section data-markdown><script type="text/template">
+### These five reasons show that we still need changes and we need them fast.
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+	### New Solidity compilers
+
+	It would be nice working more closely together.
 
 </script></section>
 
 <section data-markdown><script type="text/template">
-### Random Ideas
+	### How do we conduct language design now?
 
-- dynamic libraries: address stored in storage
-- tighter coupling between libraries and data structures: library as part of contract's state variables
-- since code is not reused anyway, just group modules of a contract and delegatecall between them automatically?
-- should libraries / contract modules have storage variables?
+	- Discuss on issues
+	- Discuss in gitter
+	- Weekly meetings (Monday, Wednesday)
+	- Solidity Summit (!!)
 </script></section>
 
 <section data-markdown><script type="text/template">
-### Dynamic Libraries: Example
+	### And in the future?
 
-	library L {
-		...
-	}
-	contract C {
-		L l;
-		using l for *;
-		uint[] x;
-		function f() public {
-			uint[] memory a;
-			uint s = a.sum();
-			uint t = x.sum();
-		}
-	}
+	1. Agile language design working group
+	2. More structured proposals (Python PEP, Swift Evolution)
+	3. Traditional language committee (2-3 year cycles)
+</script></section>
+
+<section data-markdown><script type="text/template">
+### Any questions?
+</script></section>
+
+<section data-markdown><script type="text/template">
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+
 </script></section>
 
 			</div>
@@ -213,7 +389,7 @@ Libraries are
 			// Full list of configuration options available at:
 			// https://github.com/hakimel/reveal.js#configuration
 			Reveal.initialize({
-				controls: true,
+				controls: false,
 				progress: true,
 				history: true,
 				center: false,
@@ -225,6 +401,7 @@ Libraries are
 					{ src: '../../reveal.js-3.9.2/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
 					{ src: '../../reveal.js-3.9.2/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
 					{ src: '../../reveal.js-3.9.2/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: '../../highlightjs-solidity/solidity.js', async: true, callback: function() { hljs.registerLanguage('solidity', window.hljsDefineSolidity); } },
 					{ src: '../../reveal.js-3.9.2/plugin/zoom-js/zoom.js', async: true },
 					{ src: '../../reveal.js-3.9.2/plugin/notes/notes.js', async: true }
 				]
