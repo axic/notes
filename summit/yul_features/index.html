@@ -1,0 +1,297 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>What's up, Yul</title>
+
+		<meta name="author" content="Alex Beregszaszi">
+
+		<link rel="stylesheet" href="../../reveal.js-3.9.2/css/reset.css">
+		<link rel="stylesheet" href="../../reveal.js-3.9.2/css/reveal.css">
+		<link rel="stylesheet" href="../../reveal.js-3.9.2/css/theme/simple.css" id="theme">
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="../../reveal.js-3.9.2/lib/css/zenburn.css">
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? '../../reveal.js-3.9.2/css/print/pdf.css' : '../../reveal.js-3.9.2/css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+<style type="text/css">
+@font-face {
+	font-family: PTSans;
+	src: url('./pt-sans-regular.woff') format('woff');
+	font-weight: normal;
+	font-style: normal;
+}
+body, .reveal {
+    font-family: PTSans, Arial, sans-serif;
+    font-size: 34px;
+}
+.reveal .slides {
+	text-align: left;
+}
+.reveal pre {
+  width: inherit;
+}
+.reveal table th, .reveal table td {
+    border-bottom: none;
+}
+.reveal h1, .reveal h2, .reveal h3, .reveal h4, .reveal h5, .reveal h6 {
+	text-align: center;
+	text-transform: none;
+	font-family: PTSans, Arial, sans-serif;
+	font-weight: bold;
+}
+p { text-align: left; }
+body {
+	background-color: #e6e7ecff;
+}
+
+#header-left {
+	position: absolute;
+	top: 0%;
+	left: 0%;
+	padding: 10px;
+}
+#header-right {
+	position: absolute;
+	top: 0%;
+	right: 0%;
+	padding: 10px;
+}
+#footer-left {
+	position: absolute;
+	bottom: 0%;
+	left: 0%;
+	padding: 20px;
+}
+
+#footer-center {
+	position: fixed;
+	left: 50%;
+	bottom: 0%;
+	transform: translate(-50%, 0);
+	margin: 0 auto;
+	padding: 40px;
+}
+#footer-right {
+	position: absolute;
+	bottom: 0%;
+	right: 0%;
+	padding: 40px;
+	padding-right: 120px;
+}
+
+.reveal section img {
+	border: none;
+	box-shadow: none;
+}
+</style>
+
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+    <div id="header" style="display: none;">
+        <div id="header-left"></div>
+        <div id="header-right"></div>
+        <div id="footer-left"><img src="../logo_small.png" width="100"/></div>
+        <div id="footer-center"><small>Open Discussion/<b>Yul features</b></small></div>
+        <div id="footer-right"></div>
+    </div>
+
+			<div class="slides">
+
+
+<section>
+<div style="position: fixed; top: 50px; left: 0px;">Open Discussion/<b>Yul features</b></div>
+<div style="position: fixed; top: 120px; left: 50%; margin-left: -130px;"><div style="max-height: 399px; overflow: hidden;"><img src="../logo_swarming.gif" height="400"/></div></div>
+<div style="position: fixed; top: 230px; left: 50%; margin-left: -120px; font-size: 130%; transform: rotate(-20deg);">
+<b><span style="background-color: #fce96a;">Solidity</span><br/><div style="padding-top: 20px; padding-left: 70px;"><span style="background-color: #fce96a;">Summit</span></div></b></div>
+<div style="position: fixed; top: 600px; right: -0px;"><b>Alex Beregszaszi</b></div>
+</section>
+
+<section data-markdown><script type="text/template">
+	### Background
+
+	Yul started its life as inline assembly in Solidity 0.3.1.
+
+	Ever since introducing Yul, we have been balancing between two use cases:
+	- Inline (and standalone) assembly
+	- Intermediate language (IR)
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### Goal
+
+	The goal of this session to discuss a few features and reach agreements, aiding the IR use case.
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### As inline/standalone assembly
+
+	Late last year we discussed a lot of new features with Nick Dodson and agreed to have a "staging" language outside of the compiler. Yul+ became this.
+
+	Please check it out, some features may be brought into Yul proper later.
+</script></section>
+
+
+<section data-markdown><script type="text/template">
+	### As inline/standalone assembly
+
+	However here are some issues not (fully) covered by Yul+ to look at:
+
+	- Imports: https://github.com/ethereum/solidity/issues/8612
+	- Custom opcodes/builtins: https://github.com/ethereum/solidity/issues/3215
+	- Tuple assignments: https://github.com/ethereum/solidity/issues/8303
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### As intermediate language
+
+	Lets discuss a few topics for IR and auditing!
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### Switch statement #1
+
+	Single-case switch statements:
+	```typescript
+	switch expr()
+	default {}
+
+	switch expr()
+	case 1 {}
+	```
+
+	Good for code generators. Bad for auditing?
+
+	(https://github.com/ethereum/solidity/issues/4285)
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### Switch statement #2
+
+	Curly braces around cases:
+	```typescript
+	switch expr() {
+	case 1 {}
+	default {}
+	}
+	```
+
+	Visually better -- good for auditing?
+
+	(https://github.com/ethereum/solidity/issues/8142)
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### User-defined types: definition
+
+	Extending the type system with user defined types:
+
+	```typescript
+	// These generate conversion functions
+	typedef <user_type> -> <base_type> // Option 1
+	typedef <base_type> as <user_type> // Option 2
+	typedef <user_type> as <base_type> // Option 3
+
+	// And allow assignments
+	let a:<user_type> := 1234:<user_type>
+	```
+
+	(https://github.com/ethereum/solidity/issues/3525)
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### User-defined types: conversion
+
+	Many options:
+	- `cast:<type>(value)`
+	- `cast<type>(value)`
+	- `cast_<from_type>_to_<to_type>(value)`
+	- `convert.<from_type>_to_<to_type>(value)`
+	- `<from_type>.to.<to_type>(value)`
+	- anything else?
+
+	```typescript
+	let a:mytype := 1234:mytype
+	let b := cast:u256(a)
+	let b := cast<u256>(a)
+	let b := cast_mytype_to_u256(a)
+	let b := convert.mytype_to_u256(a)
+	let b := mytype.to.u256(a)
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### EVM-specific types
+
+	- Address
+	- Memory pointer (`mem`, `memptr`, `mpointer`?)
+	- Storage / storage pointer?
+	- Calldata?
+
+	(https://github.com/ethereum/solidity/issues/3225 and https://github.com/ethereum/solidity/issues/5107)
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### Memory Optimization
+
+	- no direct access via `mload` / `mstore`, only through handle via `allocate()`
+	- memory access to different objects do not interfere and can be swapped
+	- `allocateTemporary()` <-> `releaseTemporary()`
+</script></section>
+
+			</div>
+		</div>
+
+		<script src="../../reveal.js-3.9.2/js/reveal.js"></script>
+
+		<script>
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: false,
+				progress: true,
+				history: true,
+				center: false,
+
+				transition: 'none', // none/fade/slide/convex/concave/zoom
+
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: '../../reveal.js-3.9.2/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: '../../reveal.js-3.9.2/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: '../../reveal.js-3.9.2/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: '../../highlightjs-solidity/solidity.js', async: true, callback: function() { hljs.registerLanguage('solidity', window.hljsDefineSolidity); } },
+					{ src: '../../reveal.js-3.9.2/plugin/zoom-js/zoom.js', async: true },
+					{ src: '../../reveal.js-3.9.2/plugin/notes/notes.js', async: true }
+				]
+			});
+
+			var showHideHeader = function() {
+				if (Reveal.isFirstSlide() || Reveal.isOverview()) {
+					document.getElementById("header").style = "display: none;";
+				} else {
+					document.getElementById("header").style = "display: block;";
+				}
+			};
+			Reveal.addEventListener('ready', showHideHeader);
+			Reveal.addEventListener('slidechanged', showHideHeader);
+			Reveal.addEventListener('overviewshown', showHideHeader);
+			Reveal.addEventListener('overviewhidden', showHideHeader);
+		</script>
+
+	</body>
+</html>
