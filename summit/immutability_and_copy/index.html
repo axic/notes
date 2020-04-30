@@ -1,0 +1,283 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Immutable, mutable, and copyable</title>
+
+		<meta name="author" content="Alex Beregszaszi and Leo Alt">
+
+		<link rel="stylesheet" href="../../reveal.js-3.9.2/css/reset.css">
+		<link rel="stylesheet" href="../../reveal.js-3.9.2/css/reveal.css">
+		<link rel="stylesheet" href="../../reveal.js-3.9.2/css/theme/simple.css" id="theme">
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="../../reveal.js-3.9.2/lib/css/zenburn.css">
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? '../../reveal.js-3.9.2/css/print/pdf.css' : '../../reveal.js-3.9.2/css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+<style type="text/css">
+@font-face {
+	font-family: PTSans;
+	src: url('./pt-sans-regular.woff') format('woff');
+	font-weight: normal;
+	font-style: normal;
+}
+body, .reveal {
+    font-family: PTSans, Arial, sans-serif;
+    font-size: 34px;
+}
+.reveal .slides {
+	text-align: left;
+}
+.reveal pre {
+  width: inherit;
+}
+.reveal table th, .reveal table td {
+    border-bottom: none;
+}
+.reveal h1, .reveal h2, .reveal h3, .reveal h4, .reveal h5, .reveal h6 {
+	text-align: center;
+	text-transform: none;
+	font-family: PTSans, Arial, sans-serif;
+	font-weight: bold;
+}
+p { text-align: left; }
+body {
+	background-color: #e6e7ecff;
+}
+
+#header-left {
+	position: absolute;
+	top: 0%;
+	left: 0%;
+	padding: 10px;
+}
+#header-right {
+	position: absolute;
+	top: 0%;
+	right: 0%;
+	padding: 10px;
+}
+#footer-left {
+	position: absolute;
+	bottom: 0%;
+	left: 0%;
+	padding: 20px;
+}
+
+#footer-center {
+	position: fixed;
+	left: 50%;
+	bottom: 0%;
+	transform: translate(-50%, 0);
+	margin: 0 auto;
+	padding: 40px;
+}
+#footer-right {
+	position: absolute;
+	bottom: 0%;
+	right: 0%;
+	padding: 40px;
+	padding-right: 120px;
+}
+
+.reveal section img {
+	border: none;
+	box-shadow: none;
+}
+</style>
+
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+    <div id="header" style="display: none;">
+        <div id="header-left"></div>
+        <div id="header-right"></div>
+        <div id="footer-left"><img src="../logo_small.png" width="100"/></div>
+        <div id="footer-center"><small>Open Discussion/<b>Immutable, mutable, and copyable</b></small></div>
+        <div id="footer-right"></div>
+    </div>
+
+			<div class="slides">
+
+
+<section>
+<div style="position: fixed; top: 50px; left: 0px;">Open Discussion/<b>Immutable, mutable, and copyable</b></div>
+<div style="position: fixed; top: 120px; left: 50%; margin-left: -130px;"><div style="max-height: 399px; overflow: hidden;"><img src="../logo_swarming.gif" height="400"/></div></div>
+<div style="position: fixed; top: 230px; left: 50%; margin-left: -120px; font-size: 130%; transform: rotate(-20deg);">
+<b><span style="background-color: #fce96a;">Solidity</span><br/><div style="padding-top: 20px; padding-left: 70px;"><span style="background-color: #fce96a;">Summit</span></div></b></div>
+<div style="position: fixed; top: 600px; right: -0px;"><b>Alex Beregszaszi and Leo Alt</b></div>
+</section>
+
+<section data-markdown><script type="text/template">
+	Remember, today in Solidity:
+
+	1. Variables are mutable by default
+
+	2. Non-value-types are references (based on location: storage reference, calldata reference, memory reference)
+
+	3. Assignment between different locations results in copies
+</script></section>
+
+<section data-markdown><script type="text/template">
+	🚨 Unbounded loops in smart contracts are bad 🚨
+</script></section>
+
+<section data-markdown><script type="text/template">
+	Copies of reference types are currently implicit:
+
+	```typescript
+	contract C {
+	  uint[] a;
+	  function f() public view {
+	    uint[] memory x = a;
+	    // Sure you want to copy everything?!
+	  }
+	}
+	```
+
+	(See https://github.com/ethereum/solidity/issues/2435)
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+	New keyword makes a copy of a reference type explicit:
+
+	```typescript
+	contract C {
+	  uint[] a;
+	  function f() public view {
+	    uint[] memory x = copyof a; // copy MAY not happen yet
+	    x[1] = 0; // copy at this point MUST happen
+	  }
+	}
+	```
+
+	Alternate syntax options:
+	- `copof x` (as above)
+	- `copyable x`
+	- `copy x` or `copy(x)`
+	- `copy<target_location_kind>(x)`
+
+	Q: Should copy perform a copy at the declaration site (or first use)?
+</script></section>
+
+<section data-markdown><script type="text/template">
+	"Pure" functions and mutable references 🤔
+
+	*Are pure functions really pure?*
+
+	```typescript
+	contract C {
+	  function f(uint[] memory a) pure {
+	    // This function can't change contract state
+	    // but can do this:
+	    a[1] = 1234;
+	  }
+	}
+	```
+
+	(See https://github.com/ethereum/solidity/issues/715)
+</script></section>
+
+<section data-markdown><script type="text/template">
+	Solution (mutable by default):
+	```typescript
+	contract C {
+	  function f(uint[] immutable memory a) pure {
+	    // This function cannot change contract state
+	    // and can't do this:
+	    a[1] = 1234; // <-- compiler error here
+	  }
+	}
+	```
+
+	Solution (immutable by default):
+	```typescript
+	contract C {
+	  function f(uint[] mutable memory a) pure {
+	    // This function cannot change contract state
+	    // and can do this:
+	    a[1] = 1234; // <-- works because it is mutable
+	  }
+	}
+	```
+</script></section>
+
+<section data-markdown><script type="text/template">
+	Extending immutable to variables 🤩
+
+	We could also mark all variables as `immutable` by default, enforcing this when passing them without copying (inspired by Rust).
+
+	```typescript
+	contract C {
+	  function f() {
+	    uint a = 1; // <-- works as variable declaration
+	    a = 0; // <-- fails as it is immutable
+
+	    uint mutable b = 1;
+	    b = 1; // <-- works
+	  }
+	}
+	```
+
+	- Q1: Useful?
+	- Q2: Immutability only for reference types?
+	- Q3: Immutability for value types too?
+</script></section>
+
+			</div>
+		</div>
+
+		<script src="../../reveal.js-3.9.2/js/reveal.js"></script>
+
+		<script>
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: false,
+				progress: true,
+				history: true,
+				center: false,
+
+				transition: 'none', // none/fade/slide/convex/concave/zoom
+
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: '../../reveal.js-3.9.2/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: '../../reveal.js-3.9.2/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: '../../reveal.js-3.9.2/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: '../../highlightjs-solidity/solidity.js', async: true, callback: function() { hljs.registerLanguage('solidity', window.hljsDefineSolidity); } },
+					{ src: '../../reveal.js-3.9.2/plugin/zoom-js/zoom.js', async: true },
+					{ src: '../../reveal.js-3.9.2/plugin/notes/notes.js', async: true }
+				]
+			});
+
+			var showHideHeader = function() {
+				if (Reveal.isFirstSlide() || Reveal.isOverview()) {
+					document.getElementById("header").style = "display: none;";
+				} else {
+					document.getElementById("header").style = "display: block;";
+				}
+			};
+			Reveal.addEventListener('ready', showHideHeader);
+			Reveal.addEventListener('slidechanged', showHideHeader);
+			Reveal.addEventListener('overviewshown', showHideHeader);
+			Reveal.addEventListener('overviewhidden', showHideHeader);
+		</script>
+
+	</body>
+</html>
