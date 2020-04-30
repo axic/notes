@@ -1,0 +1,303 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Testing syntax</title>
+
+		<meta name="author" content="Alex Beregszaszi">
+
+		<link rel="stylesheet" href="../../reveal.js-3.9.2/css/reset.css">
+		<link rel="stylesheet" href="../../reveal.js-3.9.2/css/reveal.css">
+		<link rel="stylesheet" href="../../reveal.js-3.9.2/css/theme/simple.css" id="theme">
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="../../reveal.js-3.9.2/lib/css/zenburn.css">
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? '../../reveal.js-3.9.2/css/print/pdf.css' : '../../reveal.js-3.9.2/css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+<style type="text/css">
+@font-face {
+	font-family: PTSans;
+	src: url('./pt-sans-regular.woff') format('woff');
+	font-weight: normal;
+	font-style: normal;
+}
+body, .reveal {
+    font-family: PTSans, Arial, sans-serif;
+    font-size: 34px;
+}
+.reveal .slides {
+	text-align: left;
+}
+.reveal pre {
+  width: inherit;
+}
+.reveal table th, .reveal table td {
+    border-bottom: none;
+}
+.reveal h1, .reveal h2, .reveal h3, .reveal h4, .reveal h5, .reveal h6 {
+	text-align: center;
+	text-transform: none;
+	font-family: PTSans, Arial, sans-serif;
+	font-weight: bold;
+}
+p { text-align: left; }
+body {
+	background-color: #e6e7ecff;
+}
+
+#header-left {
+	position: absolute;
+	top: 0%;
+	left: 0%;
+	padding: 10px;
+}
+#header-right {
+	position: absolute;
+	top: 0%;
+	right: 0%;
+	padding: 10px;
+}
+#footer-left {
+	position: absolute;
+	bottom: 0%;
+	left: 0%;
+	padding: 20px;
+}
+
+#footer-center {
+	position: fixed;
+	left: 50%;
+	bottom: 0%;
+	transform: translate(-50%, 0);
+	margin: 0 auto;
+	padding: 40px;
+}
+#footer-right {
+	position: absolute;
+	bottom: 0%;
+	right: 0%;
+	padding: 40px;
+	padding-right: 120px;
+}
+
+.reveal section img {
+	border: none;
+	box-shadow: none;
+}
+</style>
+
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+    <div id="header" style="display: none;">
+        <div id="header-left"></div>
+        <div id="header-right"></div>
+        <div id="footer-left"><img src="../logo_small.png" width="100"/></div>
+        <div id="footer-center"><small>Open Discussion/<b>Testing syntax</b></small></div>
+        <div id="footer-right"></div>
+    </div>
+
+			<div class="slides">
+
+
+<section>
+<div style="position: fixed; top: 50px; left: 0px;">Open Discussion/<b>Testing syntax</b></div>
+<div style="position: fixed; top: 120px; left: 50%; margin-left: -130px;"><div style="max-height: 399px; overflow: hidden;"><img src="../logo_swarming.gif" height="400"/></div></div>
+<div style="position: fixed; top: 230px; left: 50%; margin-left: -120px; font-size: 130%; transform: rotate(-20deg);">
+<b><span style="background-color: #fce96a;">Solidity</span><br/><div style="padding-top: 20px; padding-left: 70px;"><span style="background-color: #fce96a;">Summit</span></div></b></div>
+<div style="position: fixed; top: 600px; right: -0px;"><b>Alex Beregszaszi and Aniket</b></div>
+</section>
+
+<section data-markdown><script type="text/template">
+	### Syntax teaser
+
+	```typescript
+	test {
+	    bool hasLanguageSupport = false;
+
+	    modifier requireDiscussion {
+	        // 1. Discussion
+	        // 2. ??
+	        _;
+	        // 3. Profit
+	    }
+
+	    case("Solidity has unit testing") requireDiscussion {
+	        expect.isTrue(hasLanguageSupport);
+	    }
+	}
+	```
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### Goal
+
+	To start a conversation. Not hoping to nail this in 30 minutes.
+
+	Further reading: https://github.com/ethereum/solidity/issues/8773
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### Background
+
+	Some languages have built-in support for unit testing (C#, Rust, Python).
+
+	Others, including Solidity, delegate to external libraries.
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### Existing
+
+	- Embark: Javascript tests
+	- Truffle: Javascript + Solidity tests
+	- Remix: Solidity tests
+	- Dapphub ds-test: Solidity tests
+	- Probably others too
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### How?
+
+	Tests written in Solidity are regular contracts.
+
+	They use an assertion library, which emits events.
+
+	The runner can catch this event and display the results.
+</script></section>
+
+<section data-markdown><script type="text/template">
+	*Aniket from the Remix team demonstrating remix-tests.*
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### Benefits of language support
+
+	1. Close coupling
+	2. Access to internal/private members
+	3. ??
+
+	**Question: Is this wanted?**
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### Some ideas
+
+	1. Top-level `test {}`
+
+	2. `case(name)` (or `test(name)`?) works like a function and denotes a test case
+
+	3. Cases can use modifiers and modifiers can be declared
+
+	4. `expect` interface has assertions (`expect.isTrue()`, `expect.isEqual()`, etc.)
+
+	5. `state` (or `chain`?) interface can be used to change the chain state (`state.setTime()`, etc.)
+
+	6. `.call` and functions to have a `sender` attribute
+
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### Example
+
+	```typescript
+	test {
+	    address token;
+
+	    address initialHolder = 0x123;
+	    string name = "My Token";
+	    string symbol = "MTKN";
+	    uint initialSupply = 100;
+
+	    modifier beforeEach() {
+	        token = new ERC20(name, symbol, initialHolder, initialSupply);
+
+	        _;
+	    }
+
+	    test("has a name") beforeEach {
+	        expect.isEqual(token.name, name);
+	    }
+
+	    test("has a symbol") {
+	        expect.isEqual(token.name, name);
+	    }
+
+	    test("transfer without balance") beforeEach {
+	        try {
+	            token.transfer{sender=0x555}(0x333, 12 eth);
+	            expect.failure();
+	        } catch (bytes memory) {
+	            expect.success();
+	        }
+	    }
+	}
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### More questions
+
+	1. Should these cases be executed by the compiler?
+
+	2. Should these be exported in a special way through standard json?
+
+	3. Are complex features needed (such as chaning chain properties)?
+
+	4. Is there a need for init / beforeEach / afterEach / beforeAll / afterAll?
+</script></section>
+
+			</div>
+		</div>
+
+		<script src="../../reveal.js-3.9.2/js/reveal.js"></script>
+
+		<script>
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: false,
+				progress: true,
+				history: true,
+				center: false,
+
+				transition: 'none', // none/fade/slide/convex/concave/zoom
+
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: '../../reveal.js-3.9.2/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: '../../reveal.js-3.9.2/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: '../../reveal.js-3.9.2/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: '../../highlightjs-solidity/solidity.js', async: true, callback: function() { hljs.registerLanguage('solidity', window.hljsDefineSolidity); } },
+					{ src: '../../reveal.js-3.9.2/plugin/zoom-js/zoom.js', async: true },
+					{ src: '../../reveal.js-3.9.2/plugin/notes/notes.js', async: true }
+				]
+			});
+
+			var showHideHeader = function() {
+				if (Reveal.isFirstSlide() || Reveal.isOverview()) {
+					document.getElementById("header").style = "display: none;";
+				} else {
+					document.getElementById("header").style = "display: block;";
+				}
+			};
+			Reveal.addEventListener('ready', showHideHeader);
+			Reveal.addEventListener('slidechanged', showHideHeader);
+			Reveal.addEventListener('overviewshown', showHideHeader);
+			Reveal.addEventListener('overviewhidden', showHideHeader);
+		</script>
+
+	</body>
+</html>
