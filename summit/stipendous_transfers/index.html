@@ -1,0 +1,280 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Stipendous transfers</title>
+
+		<meta name="author" content="Alex Beregszaszi">
+
+		<link rel="stylesheet" href="../../reveal.js-3.9.2/css/reset.css">
+		<link rel="stylesheet" href="../../reveal.js-3.9.2/css/reveal.css">
+		<link rel="stylesheet" href="../../reveal.js-3.9.2/css/theme/simple.css" id="theme">
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="../../reveal.js-3.9.2/lib/css/zenburn.css">
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? '../../reveal.js-3.9.2/css/print/pdf.css' : '../../reveal.js-3.9.2/css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+<style type="text/css">
+@font-face {
+	font-family: PTSans;
+	src: url('./pt-sans-regular.woff') format('woff');
+	font-weight: normal;
+	font-style: normal;
+}
+body, .reveal {
+    font-family: PTSans, Arial, sans-serif;
+    font-size: 34px;
+}
+.reveal .slides {
+	text-align: left;
+}
+.reveal pre {
+  width: inherit;
+}
+.reveal table th, .reveal table td {
+    border-bottom: none;
+}
+.reveal h1, .reveal h2, .reveal h3, .reveal h4, .reveal h5, .reveal h6 {
+	text-align: center;
+	text-transform: none;
+	font-family: PTSans, Arial, sans-serif;
+	font-weight: bold;
+}
+p { text-align: left; }
+body {
+	background-color: #e6e7ecff;
+}
+
+#header-left {
+	position: absolute;
+	top: 0%;
+	left: 0%;
+	padding: 10px;
+}
+#header-right {
+	position: absolute;
+	top: 0%;
+	right: 0%;
+	padding: 10px;
+}
+#footer-left {
+	position: absolute;
+	bottom: 0%;
+	left: 0%;
+	padding: 20px;
+}
+
+#footer-center {
+	position: fixed;
+	left: 50%;
+	bottom: 0%;
+	transform: translate(-50%, 0);
+	margin: 0 auto;
+	padding: 40px;
+}
+#footer-right {
+	position: absolute;
+	bottom: 0%;
+	right: 0%;
+	padding: 40px;
+	padding-right: 120px;
+}
+
+.reveal section img {
+	border: none;
+	box-shadow: none;
+}
+</style>
+
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+    <div id="header" style="display: none;">
+        <div id="header-left"></div>
+        <div id="header-right"></div>
+        <div id="footer-left"><img src="../logo_small.png" width="100"/></div>
+        <div id="footer-center"><small>Open Discussion/<b>Stipendous transfers</b></small></div>
+        <div id="footer-right"></div>
+    </div>
+
+			<div class="slides">
+
+
+<section>
+<div style="position: fixed; top: 50px; left: 0px;">Open Discussion/<b>Stipendous transfers</b></div>
+<div style="position: fixed; top: 120px; left: 50%; margin-left: -130px;"><div style="max-height: 399px; overflow: hidden;"><img src="../logo_swarming.gif" height="400"/></div></div>
+<div style="position: fixed; top: 230px; left: 50%; margin-left: -120px; font-size: 130%; transform: rotate(-20deg);">
+<b><span style="background-color: #fce96a;">Solidity</span><br/><div style="padding-top: 20px; padding-left: 70px;"><span style="background-color: #fce96a;">Summit</span></div></b></div>
+<div style="position: fixed; top: 600px; right: -0px;"><b>Alex Beregszaszi</b></div>
+</section>
+
+<section data-markdown><script type="text/template">
+	### Background
+
+	An account with code (aka contract) has its code executed on every incoming Ether transfer*
+
+	(* with the exception of being targets of a coinbase or a selfdestruct)
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### Background
+
+	Reason for this: contracts should be able to reject incoming Ether.
+
+	They can check state (SLOAD) and emit events, but **should not change state** (SSTORE).
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### Not so fast...
+
+	This is way more complicated (`call(<gas>, <value>)`):
+	- call(0, 0) -> 0 gas passed
+	- call(0, 1) -> 2300 gas passed (stipend)
+	- call(100, 1) -> 2400 gas passed (stipend + 100)
+	- call(100, 0) -> 100 gas passed
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### .send(v)
+
+	Because of these complexities, Solidity introduced the current .send() semantics in 2016. It manually enforces recipient will always have 2300 gas.
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### .transfer(v)
+
+	.transfer() was added in 2017.
+
+	Difference: While .send() returns boolean stating outcome, .transfer() bubbles up errors (reverts on failure).
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### .call{value=v, gas=g}()
+
+	However the "low-level" way to send Ether also exists.
+
+	(Old syntax: `.call.value(v).gas(g)()`)
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### Problem 1: The stipend could change
+
+	EIP-1285 proposes raising it to 3500 gas
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### Problem 2: Other gas prices can decrease
+
+	EIP-1283 (Net gas metering for SSTORE) in Constantinople reduced costs and allowed SSTORE within the stipend.
+
+	EIP-1706 proposed a workaround.
+
+	EIP-2200, landed in Istanbul, merged the two.
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### Problem 3: Other gas prices can increase
+
+	EIP-1884 in Istanbul introduced an increase of SLOAD (200 -> 800 gas) and BALANCE (400 -> 700 gas).
+
+	In many cases this leads into once stipend-safe functions breaking in Istanbul.
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### Problem 4: Reentrancy
+
+	The reason we don't want SSTORE to be successful is to avoid reentrancy.
+
+	However, solely relying on flexible gas costs is a bad idea.
+
+	And new features, such as EIP-1153 (Transient storage), could further complicate it.
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### Problem 5: Proxies
+
+	Proxy contracts likely to fail calling their implementations, given `CALL` alone is 700 gas.
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### Further reading
+
+	- https://diligence.consensys.net/blog/2019/09/stop-using-soliditys-transfer-now/
+	- https://github.com/ethereum/solidity/issues/7455
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### Many are calling for an overhaul of .send/.transfer
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### Some proposals
+
+	1. Deprecate .send / .transfer (and rely on `.call{value=v}()`)
+	2. Change .send / .transfer to pass on all gas
+	3. Introduce a new function
+	4. `withdraw(v)` send `v` to `msg.sender` and stop execution
+</script></section>
+
+<section data-markdown><script type="text/template">
+	### Conversation time 💬
+
+	Add more input on: https://github.com/ethereum/solidity/issues/7455
+</script></section>
+
+			</div>
+		</div>
+
+		<script src="../../reveal.js-3.9.2/js/reveal.js"></script>
+
+		<script>
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: false,
+				progress: true,
+				history: true,
+				center: false,
+
+				transition: 'none', // none/fade/slide/convex/concave/zoom
+
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: '../../reveal.js-3.9.2/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: '../../reveal.js-3.9.2/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: '../../reveal.js-3.9.2/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: '../../highlightjs-solidity/solidity.js', async: true, callback: function() { hljs.registerLanguage('solidity', window.hljsDefineSolidity); } },
+					{ src: '../../reveal.js-3.9.2/plugin/zoom-js/zoom.js', async: true },
+					{ src: '../../reveal.js-3.9.2/plugin/notes/notes.js', async: true }
+				]
+			});
+
+			var showHideHeader = function() {
+				if (Reveal.isFirstSlide() || Reveal.isOverview()) {
+					document.getElementById("header").style = "display: none;";
+				} else {
+					document.getElementById("header").style = "display: block;";
+				}
+			};
+			Reveal.addEventListener('ready', showHideHeader);
+			Reveal.addEventListener('slidechanged', showHideHeader);
+			Reveal.addEventListener('overviewshown', showHideHeader);
+			Reveal.addEventListener('overviewhidden', showHideHeader);
+		</script>
+
+	</body>
+</html>
