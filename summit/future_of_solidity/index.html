@@ -1,0 +1,683 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>The Future of Solidity (ETHOnline)</title>
+
+		<meta name="author" content="Alex Beregszaszi">
+
+		<link rel="stylesheet" href="../../reveal.js-3.9.2/css/reset.css">
+		<link rel="stylesheet" href="../../reveal.js-3.9.2/css/reveal.css">
+		<link rel="stylesheet" href="../../reveal.js-3.9.2/css/theme/simple.css" id="theme">
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="../../reveal.js-3.9.2/lib/css/zenburn.css">
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? '../../reveal.js-3.9.2/css/print/pdf.css' : '../../reveal.js-3.9.2/css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+<style type="text/css">
+@font-face {
+	font-family: PTSans;
+	src: url('./pt-sans-regular.woff') format('woff');
+	font-weight: normal;
+	font-style: normal;
+}
+body, .reveal {
+    font-family: PTSans, Arial, sans-serif;
+    font-size: 34px;
+}
+.reveal .slides {
+	text-align: left;
+}
+.reveal pre {
+  width: inherit;
+}
+.reveal table th, .reveal table td {
+    border-bottom: none;
+}
+.reveal h1, .reveal h2, .reveal h3, .reveal h4, .reveal h5, .reveal h6 {
+	text-align: center;
+	text-transform: none;
+	font-family: PTSans, Arial, sans-serif;
+	font-weight: bold;
+}
+p { text-align: left; }
+body {
+	background-color: #e6e7ecff;
+}
+
+#header-left {
+	position: absolute;
+	top: 0%;
+	left: 0%;
+	padding: 10px;
+}
+#header-right {
+	position: absolute;
+	top: 0%;
+	right: 0%;
+	padding: 10px;
+}
+#footer-left {
+	position: absolute;
+	bottom: 0%;
+	left: 0%;
+	padding: 20px;
+}
+
+#footer-center {
+	position: fixed;
+	left: 50%;
+	bottom: 0%;
+	transform: translate(-50%, 0);
+	margin: 0 auto;
+	padding: 40px;
+}
+#footer-right {
+	position: absolute;
+	bottom: 0%;
+	right: 0%;
+	padding: 40px;
+	padding-right: 120px;
+}
+
+.reveal section img {
+	border: none;
+	box-shadow: none;
+}
+</style>
+
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+    <div id="header" style="display: none;">
+        <div id="header-left"></div>
+        <div id="header-right"></div>
+        <div id="footer-left"><img src="../logo_small.png" width="100"/></div>
+        <div id="footer-center"><small>twitter.com/alexberegszaszi – #ETHOnline</small></div>
+        <div id="footer-right"></div>
+    </div>
+
+			<div class="slides">
+
+
+<section>
+<div style="position: fixed; top: 50px; left: 0px;"><b></b></div>
+<div style="position: fixed; top: 120px; left: 50%; margin-left: -130px;"><div style="max-height: 399px; overflow: hidden;"><img src="../logo_swarming.gif" height="400"/></div></div>
+<div style="position: fixed; top: 230px; left: 50%; margin-left: -120px; font-size: 130%; transform: rotate(-20deg);">
+<b><span style="background-color: #fce96a;">The future of</span><br/><div style="padding-top: 20px; padding-left: 50px;"><span style="background-color: #fce96a;">Solidity</span></div></b></div>
+<div style="position: fixed; top: 550px; right: -0px;"><b>Alex Beregszaszi</b></div>
+<div style="position: fixed; top: 620px; right: -0px;"><small>twitter.com/alexberegszaszi</small></div>
+<div style="position: fixed; top: 650px; right: -0px;"><small>github.com/axic</small></div>
+</section>
+
+<section data-markdown><script type="text/template">
+	## Intro
+
+	- Solidity Portal: [soliditylang.org](https://soliditylang.org)
+	- Blog: [solidity.ethereum.org](https://solidity.ethereum.org)
+	- Underhanded Contest: [underhanded.soliditylang.org](https://underhanded.soliditylang.org)
+	![](./solidity_sites3.png)
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## Agenda
+
+	The past:
+
+	https://solidity.ethereum.org/2020/07/08/solidity-turns-5/
+
+  The future:
+	1. Short-term
+	2. Medium-term
+	3. Long-term
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## Short-term
+
+	Regular releases are made every few weeks, aiming at 2-3 weeks.
+
+	Trying to have two breaking releases a year, evenly spaced out:
+	- The last: 0.7.0 in July
+	- The next: 0.8.0 end of this year
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## Short-term
+
+	0.8.0:
+	- Checked arithmetic ("SafeMath")
+	- Panic codes
+	- Stricter type conversions
+	- Turn on ABIEncoderV2 by default
+	- and others...
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## Wrapping arithmetic
+
+	```solidity
+	pragma solidity ^0.7.0;
+	contract C {
+	  function f(uint a, uint b) pure public returns (uint) {
+	    return a + b;
+	  }
+	}
+	```
+
+	1. *What happens on `a = uint(-1)` and `b = 1`?*
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## Wrapping arithmetic
+
+	```solidity
+	pragma solidity ^0.7.0;
+	contract C {
+	  function f(uint a, uint b) pure public returns (uint) {
+	    return a + b;
+	  }
+	}
+	```
+
+	1. *What happens on `a = uint(-1)` and `b = 1`?*
+
+	`f()` returns `1`. It wraps around.
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## Wrapping arithmetic
+
+	```solidity
+	pragma solidity ^0.7.0;
+	contract C {
+	  function f(uint a, uint b) pure public returns (uint) {
+	    return a + b;
+	  }
+	}
+	```
+
+	1. *What happens on `a = uint(-1)` and `b = 1`?*
+
+	`f()` returns `1`. It wraps around.
+
+	2. *Why not revert?*
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## Wrapping arithmetic
+
+	```solidity
+	pragma solidity ^0.7.0;
+	contract C {
+	  function f(uint a, uint b) pure public returns (uint) {
+	    return a + b;
+	  }
+	}
+	```
+
+	1. *What happens on `a = uint(-1)` and `b = 1`?*
+
+	`f()` returns `1`. It wraps around.
+
+	2. *Why not revert?*
+
+	Because Solidity exposes the underlying EVM behaviour. Workaround: "SafeMath" libraries.
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## Checked arithmetic
+
+	In 0.8.0 arithmetic operations revert on under/overflow:
+
+	```solidity
+	pragma solidity ^0.8.0;
+	contract C {
+	  function f(uint a, uint b) pure public returns (uint) {
+	    // This addition will revert on overflow.
+	    //
+	    // No need for `a.add(b)` using `SafeMath`.
+	    return a + b;
+	  }
+	}
+	```
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## Checked arithmetic
+
+	In 0.8.0 arithmetic operations revert on under/overflow:
+
+	```solidity
+	pragma solidity ^0.8.0;
+	contract C {
+	  function f(uint a, uint b) pure public returns (uint) {
+	    // This addition will revert on overflow.
+	    //
+	    // No need for `a.add(b)` using `SafeMath`.
+	    return a + b;
+	  }
+
+	  function g(uint a, uint b) pure public returns (uint) {
+	    // This addition will wrap on overflow.
+	    unchecked { return a + b; }
+	  }
+	}
+	```
+
+	**Check documentation for edge cases!**
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## Type conversions
+
+	What do these conversions return?
+
+	```solidity
+
+	uint16 a = uint16(0xffffffffff);
+
+	uint16 b = uint16(-1);
+
+	address c = address(0xffffffffffffffffffffffffffffffffffffffff);
+
+	address d = address(0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF);
+
+	address e = address(0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
+
+	address f = address(-1);
+
+	uint16 g = uint16(uint8(int8(-1)));
+
+	uint16 h = uint16(int16(int8(-1)));
+
+	uint16 i = uint16(int8(-1));
+	```
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## Type conversions
+
+	What do these conversions return?
+
+	```solidity
+	// Equals to `0xffff`
+	uint16 a = uint16(0xffffffffff);
+	// Equals to `0xffff`
+	uint16 b = uint16(-1);
+	// Error: Missing checksum
+	address c = address(0xffffffffffffffffffffffffffffffffffffffff);
+	// Valid address
+	address d = address(0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF);
+	// No warning and equals to `d`
+	address e = address(0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
+	// Equals to `d`
+	address f = address(-1);
+	// Equals to `0x00ff`
+	uint16 h = uint16(uint8(int8(-1)));
+	// Equals to `0xffff`
+	uint16 i = uint16(int16(int8(-1)));
+	// Equals to `0x00ff` or `0xffff` depending in implementation.
+	uint16 g = uint16(int8(-1));
+	```
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## Type conversions
+
+	In 0.8.0 all these *weird* cases are disallowed:
+	- Literal must be less than or equal the bitwidth
+	- Literal's sign must match the type
+	- One exception: `address(0)`
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## Panic codes
+
+	Generated code could abort two ways:
+	- Using the `INVALID` opcode (all gas consumed)
+	- Using the `REVERT` opcode (and remaining gas spared)
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## Panic codes
+
+	Generated code could abort two ways:
+	- Using the `INVALID` opcode (all gas consumed)
+	- Using the `REVERT` opcode (and remaining gas spared)
+
+	Assertions and internal checks used `INVALID` prior to 0.8.0.
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## Panic codes
+
+	Generated code could abort two ways:
+	- Using the `INVALID` opcode (all gas consumed)
+	- Using the `REVERT` opcode (and remaining gas spared)
+
+	Assertions and internal checks used `INVALID` prior to 0.8.0.
+
+	User defined errors used `REVERT`:
+	```solidity
+	require(msg.value > 1000 ether, "Only whales accepted.");
+	```
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## Panic codes
+
+	The user defined errors actually encode the message using the ABI formatting:
+
+	the function selector `keccak256("Error(string)")` followed by the string.
+
+	```solidity
+	require(msg.value > 1000 ether, "Only whales accepted.");
+
+	// equals to:
+	if (msg.value <= 1000 ether)
+	  revert(string(abi.encodeWithSignature("Error(string)", "Only whales accepted.")));
+	```
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## Panic codes
+
+	Next to `Error(string)` a new error signature is introduced: `Panic(uint256)`.`
+
+	The `uint256` parameter is the panic code, which currently are the following:
+	- `0x01`: on manually calling `assert(...)`
+	- `0x11`: arithmetic under- or overflow -- outside of an `unchecked` block!
+	- `0x12`: division or modulo by zero
+	- `0x21`: out of bounds type conversion to enum
+	- `0x32`: out of bounds array access
+	- etc.
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## ABIEncoderV2
+
+	- Introduced in 0.4.16 (2017).
+	- Generates Yul code.
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## ABIEncoderV2
+
+	- Introduced in 0.4.16 (2017).
+	- Generates Yul code.
+	  - Better maintainability.
+	  - Supports more types (structs).
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## ABIEncoderV2
+
+	- Introduced in 0.4.16 (2017).
+	- Generates Yul code.
+	  - Better maintainability.
+	  - Supports more types (structs).
+	- Enabled via `pragma experimental ABIEncoderV2;`
+	- Inserts "experimental" flag in metadata.
+	  - Does not marks metadata experimental since 0.6.0 (2019), but requires pragma.
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## ABIEncoderV2 by default
+
+	Enabled by default!
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## ABIEncoderV2 by default
+
+	Enabled by default!
+
+	Old behaviour:
+	```solidity
+	pragma abicoder v1;
+	```
+
+	New behaviour (default):
+	```solidity
+	pragma abicoder v2;
+	```
+
+	Still allowed, but emits warning:
+	```solidity
+	pragma experimental ABIEncoderV2;
+	```
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## Medium-term
+
+	![](./open_design_issues2.png)
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## Medium-term
+
+	- Solidity to Yul (SolYul) code generator
+	- Enums with data (algebraic data types)
+	- Templates
+	- Standard library
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## SolYul
+
+	Progress can be followed: https://github.com/ethereum/solidity/projects/32
+
+	Supports almost all language features, except:
+	- Libraries
+	- Some cases of copying between memory and storage
+
+	Benefits:
+	- Better maintainability
+	- Better integration with ABIEncoderV2
+	- Eliminating the "stack too deep" error
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## SolYul
+
+	It can compile:
+	- Uniswap
+	- Eth2 deposit contract
+
+	It can almost compile:
+	- Gnosis Safe
+	- Gnosis MultiSigWallet
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## Enums with data
+
+	Discussion: https://github.com/ethereum/solidity/issues/909
+
+	```solidity
+	enum User {
+	  New(address account),
+	  Validated(address account, uint validations),
+	  Trusted(address account),
+	  Banned(address account)
+	}
+
+	function isValidated(User user) pure public returns (bool) {
+	  if (user == User.Validated && user.Validated.validations > 3)
+	    return true;
+	  return false;
+	}
+	```
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## Enums with data
+
+	No syntax proposal for matching yet -- requires a long if-else chain:
+	```
+	function userAccount(User user) pure public returns (address) {
+	  if (user == User.New)
+	    return user.New.account;
+	  else if (user == User.Validated)
+	    return user.Validated.account;
+	  else if (user == User.Trusted)
+	    return user.Trusted.account;
+	  else if (user == User.Banned)
+	    return user.Banned.account;
+	}
+	```
+
+	Current conversation focuses on encoding such enums -- in ABI and storage.
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## Templates
+
+	Discussion: https://github.com/ethereum/solidity/issues/869
+
+	Example for syntax:
+	```solidity
+	function typecast<T>(uint256 value, string memory message) internal pure returns (T) {
+	  require(value <= type(T).max, message);
+	  return T(value);
+	}
+	```
+
+	Next steps:
+	- Write more examples to find potential problems
+	- Consider introspection helpers
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## Standard library
+
+	Goals:
+	- *Not to compete with OpenZeppelin*
+	- Move more features from the compiler
+	- Decouple EVM specific behaviour a bit
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## Standard library
+
+	Examples:
+
+	1. Remove global functions and make them importable
+	```solidity
+	import ecrecover from std;
+	import {keccak256, sha256, chainid} from std;
+	```
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## Standard library
+
+	2. Actually implement these helpers in Solidity
+	```solidity
+	function ecrecover(bytes32 hash, uint8 v, bytes32 r, bytes32 s) public returns (address addr) {
+	  assembly {
+	    // Prepare input
+	    // We are using the free memory pointer.
+	    let input := mload(0x40)
+	    mstore(input, hash)
+	    mstore(add(input, 32), v)
+	    mstore(add(input, 64), r)
+	    mstore(add(input, 96), s)
+
+	    // Prepare output
+	    let output := add(input, 128)
+	    mstore(output, 0)
+
+	    // Call the precompile
+	    let ret := staticcall(gas(), 1, input, 128, output, 32)
+	    switch ret
+	    case 1 { // Success
+	      addr := mload(output)
+	    }
+	    default { // Failure
+	      // Need to do anything?
+	    }
+	  }
+	}
+	````
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## Long-term
+
+	What does the future hold for Solidity?
+
+	- Different targets?
+	- Different dialects?
+	- Rollups? OVM?
+	- Sharding?
+	- Ewasm?
+</script></section>
+
+<section data-markdown><script type="text/template">
+	## Any questions?
+
+	- Solidity Portal: [soliditylang.org](https://soliditylang.org)
+	- Blog: [solidity.ethereum.org](https://solidity.ethereum.org)
+	- Underhanded Contest: [underhanded.soliditylang.org](https://underhanded.soliditylang.org)
+	![](./solidity_sites3.png)
+</script></section>
+
+			</div>
+		</div>
+
+		<script src="../../reveal.js-3.9.2/js/reveal.js"></script>
+
+		<script>
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: false,
+				progress: true,
+				history: true,
+				center: false,
+
+				transition: 'none', // none/fade/slide/convex/concave/zoom
+
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: '../../reveal.js-3.9.2/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: '../../reveal.js-3.9.2/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: '../../reveal.js-3.9.2/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: '../../highlightjs-solidity/solidity.js', async: true, callback: function() { hljs.registerLanguage('solidity', window.hljsDefineSolidity); } },
+					{ src: '../../reveal.js-3.9.2/plugin/zoom-js/zoom.js', async: true },
+					{ src: '../../reveal.js-3.9.2/plugin/notes/notes.js', async: true }
+				]
+			});
+
+			var showHideHeader = function() {
+				if (Reveal.isFirstSlide() || Reveal.isOverview()) {
+					document.getElementById("header").style = "display: none;";
+				} else {
+					document.getElementById("header").style = "display: block;";
+				}
+			};
+			Reveal.addEventListener('ready', showHideHeader);
+			Reveal.addEventListener('slidechanged', showHideHeader);
+			Reveal.addEventListener('overviewshown', showHideHeader);
+			Reveal.addEventListener('overviewhidden', showHideHeader);
+		</script>
+
+	</body>
+</html>
