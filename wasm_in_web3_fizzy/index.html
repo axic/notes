@@ -1,0 +1,503 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Fizzy (Wasm in Web3)</title>
+
+		<meta name="author" content="Alex Beregszaszi">
+
+		<link rel="stylesheet" href="../reveal.js-3.9.2/css/reset.css">
+		<link rel="stylesheet" href="../reveal.js-3.9.2/css/reveal.css">
+		<link rel="stylesheet" href="../reveal.js-3.9.2/css/theme/simple.css" id="theme">
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="../reveal.js-3.9.2/lib/css/zenburn.css">
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? '../reveal.js-3.9.2/css/print/pdf.css' : '../reveal.js-3.9.2/css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+<style type="text/css">
+@font-face {
+	font-family: PTSans;
+	src: url('./pt-sans-regular.woff') format('woff');
+	font-weight: normal;
+	font-style: normal;
+}
+body, .reveal {
+    font-family: PTSans, Arial, sans-serif;
+    font-size: 34px;
+}
+.reveal .slides {
+	text-align: left;
+}
+.reveal pre {
+  width: inherit;
+}
+.reveal table th, .reveal table td {
+    border-bottom: none;
+}
+.reveal h1, .reveal h2, .reveal h3, .reveal h4, .reveal h5, .reveal h6 {
+	text-align: center;
+	text-transform: none;
+	font-family: PTSans, Arial, sans-serif;
+	font-weight: bold;
+}
+p { text-align: left; }
+body {
+	background-color: #e6e7ecff;
+}
+
+#header-left {
+	position: absolute;
+	top: 0%;
+	left: 0%;
+	padding: 10px;
+}
+#header-right {
+	position: absolute;
+	top: 0%;
+	right: 0%;
+	padding: 10px;
+}
+#footer-left {
+	position: absolute;
+	bottom: 0%;
+	left: 0%;
+	padding: 20px;
+}
+
+#footer-center {
+	position: fixed;
+	left: 50%;
+	bottom: 0%;
+	transform: translate(-50%, 0);
+	margin: 0 auto;
+	padding: 40px;
+}
+#footer-right {
+	position: absolute;
+	bottom: 0%;
+	right: 0%;
+	padding: 40px;
+	padding-right: 120px;
+}
+
+.reveal section img {
+	border: none;
+	box-shadow: none;
+}
+
+.reveal table {
+  margin: auto;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.reveal table th {
+  font-weight: bold;
+}
+
+.reveal table th,
+.reveal table td {
+  text-align: left;
+  padding: 0.2em 0.5em 0.2em 0.5em;
+  border-bottom: 1px solid;
+}
+</style>
+
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+    <div id="header" style="display: none;">
+        <div id="header-left"></div>
+        <div id="header-right"></div>
+        <div id="footer-left"><img src="fizzy_logo.svg" width="70"/></div>
+        <div id="footer-center"><small>Fizzy @ Wasm in Web3</small></div>
+        <div id="footer-right"></div>
+    </div>
+
+			<div class="slides">
+
+
+<section>
+<div style="position: fixed; top: 50px; left: 0px;"><b></b></div>
+<div style="position: fixed; top: 120px; left: 50%; margin-left: -130px;"><div style="max-height: 399px; overflow: hidden;"><img src="fizzy_logo.svg" height="400"/></div></div>
+<div style="position: fixed; top: 50px; left: 50%; margin-left: -240px; font-size: 130%; background-color: #fce96a;">Fizzy, a deterministic interpreter</div>
+<div style="position: fixed; top: 550px; right: -0px;"><b>Alex Beregszaszi</b></div>
+<div style="position: fixed; top: 620px; right: -0px;"><small><a href="https://twitter.com/alexberegszaszi">twitter.com/alexberegszaszi</a></small><div>
+<div style="position: fixed; top: 650px; right: -0px;"><small><a href="https://github.com/axic">github.com/axic</a></small></div>
+</section>
+
+<section data-markdown><script type="text/template">
+## Background
+
+- Ipsilon team
+    - Publishing on [notes.ethereum.org/@ipsilon](https://notes.ethereum.org/@ipsilon)
+- Research on Ethereum/EVM
+- Team previously called [Ewasm](https://github.com/ewasm)
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Ewasm
+
+- Goal in 2016: Bring Wasm to Ethereum
+- Initial requirements:
+    1. Determistic execution
+    2. Instant start up time
+    3. Fast execution time
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Determinism
+
+1. Given some limit (time, steps) execution always stops at the same place
+    - commonly accomplished with *metering*
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Determinism
+
+1. Given some limit (time, steps) execution always stops at the same place
+    - commonly accomplished with *metering*
+3. Results are identical on every the host machine
+    - floating points
+    - host stack size (e.g. call depth)
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Ewasm
+
+- Expected issues:
+    - Determinism
+    - Metering
+    - Good interfaces for seemless integration
+- Expected non-issues:
+    - Speed
+    - Abundance of VMs
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Ewasm
+
+- Expected issues:
+    - Determinism
+    - Metering
+    - Good interfaces for seemless integration
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Ewasm
+
+- ~~Expected issues:~~
+    - ~~Determinism~~
+    - ~~Metering~~
+    - ~~Good interfaces for seemless integration~~
+- Actual issues:
+    - Speed
+    - Lack of VMs
+    - VM risks: AOT and JIT
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Ewasm
+
+- Expected non-issues:
+    - Speed
+    - Abundance of VMs
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Ewasm
+
+- ~~Expected non-issues:~~
+    - ~~Speed~~
+    - ~~Abundance of VMs~~
+- Actual non-issues:
+    - Determinism (not that bad)
+    - Metering (to some extent)
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Our initial choices
+
+1. Inject metering into Wasm code
+    - Metering is done by counting executed steps with different cost for different instructions
+2. Inject call depth check into Wasm code
+3. Reject code with floating point
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Initial results (in 2018)
+
+With Binaryen and v8 (node.js):
+
+- **It works!**
+- Metering overhead is not terrible
+- 64-bit operations are pretty fast
+- 256-bit operations are not as fast as on the EVM
+
+... so there are no problems?
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Problems
+
+1. **Binaryen is pretty slow**
+
+Switched to wabt.
+
+2. **v8 can be attacked (*JIT bombs*)**
+
+Decided that JITs are not suitable for our use case, but there were no proper AOTs at the time. This track was paused.
+</script></section>
+
+<section data-markdown><script type="text/template">
+## wabt (in 2019)
+
+Experimented with various optimisations:
+- Internal superinstructions (combining multiple Wasm instr.)
+    - e.g. `(i32.set_local $i (i32.add (i32.get_local $i) (i32.get_local $j)))` → `(i32.add_locals $i $j)`
+- Optimise some checks
+- Translate known host function calls into internal custom instructions
+
+[See various branches of this wabt fork](https://github.com/ewasm/wabt)
+</script></section>
+
+<section data-markdown><script type="text/template">
+## New results
+
+Wabt is pretty damn fast!
+
+<center><img src="bignums-bls12-pairings-wabt-vs-native-exec-startup-time.png" width="43%"/></center>
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Problems (again?!)
+
+1. Wabt (and our changes) is not production ready
+
+2. New requirement: VM should be *small* and understandable by client maintainers 😭
+
+
+*(Remark: Used this experience to improve the EVM.)*
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Interpreters in 2019
+
+|          | Language | Speed | Production oriented | Integration |
+|----------|----------|-------|---------------------|-------------|
+| binaryen | C++      | --    | No                  | +           |
+| wabt     | C++      | +     | No                  | +           |
+| wasmi    | Rust     | -     | Yes                 | -           |
+| wamr     | C        | +     | Yes                 | -           |
+| wagon    | Go       | --    | No                  | -           |
+
+**Decision: create Fizzy.**
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Intermission
+
+Started working on Fizzy late 2019
+
+... little did we know wasm3 and ssvm (now wasmedge) would be released soon
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Goals of Fizzy
+
+1) Code quality
+- Small codebase
+- No external dependencies
+- Clean and readable code
+- Easy to embed 
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Goals of Fizzy
+
+2) Simplicity
+- Only support "WebAssembly 1.0"
+- Interpreter only
+- Only support Wasm binaries (and not WAT/WAST!)
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Goals of Fizzy
+
+3) Conformance
+
+- 99+% unit test coverage
+- 100% pass of the officiail test suite
+- Stricter tests than the official ones
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Goals of Fizzy
+
+4) First class support for blockchains
+
+- Canonical handling of floating point
+- Runtime metering
+- Enforce call depth bound
+- Efficient big integer API
+    - 256-bit and modular arithmetic for *arbitrary<sup>1</sup>* bit widths
+
+<small><sup>1</sup>: With limits, of course.</small>
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Fizzy in Numbers
+
+- Core logic: ~3500 lines
+- 100% unit test coverage
+- Passes all (~20050) upstream tests
+- 2<sup>nd</sup> fastest after Wasm3
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Features
+
+- C++ core implementation
+- Uses exceptions (for parsing only) 😩
+- Support only Wasm binaries (not WAT/WAST)
+- Public C API (with CMake integration)
+- Rust binding
+- WASI support (incomplete)
+- Benchmarking tool (`fizzy-bench`)
+- Runtime metering
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Testing
+
+- Unittests
+- Spectests
+    - Using wabt's `wast2json`
+- Special tests for floating point
+    - Using [Berkeley TestFloat](http://www.jhauser.us/arithmetic/TestFloat.html) to test against IEEE 754 conformance
+</script></section>
+
+<section data-markdown><script type="text/template">
+## What is planned
+
+- Remove exceptions 
+    - → fizzy can be compiled to Wasm too 🤓
+
+- Support an efficient big integer API
+    - Here we can take back our learnings from the EVM
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Things to consider
+
+- Further restrict complexity, by adding limits to:
+  - number of locals
+  - number of function parameters
+  - number of labels
+  - etc.
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Interpreters in 2021
+
+|          | Language | Speed | Production oriented | Integration |
+|----------|----------|-------|---------------------|-------------|
+| binaryen | C++      | --    | No                  | +           |
+| fizzy    | C++      | ++    | Yes                 | +           |
+| wabt     | C++      | +     | No                  | +           |
+| wasm3    | C        | +++   | No                  | +           |
+| wasmedge | C++      | +     | Yes                 | +           |
+| wasmi    | Rust     | -     | Yes                 | -           |
+| wamr     | C        | +     | Yes                 | -           |
+| wagon    | Go       | --    | No                  | -           |
+</script></section>
+
+<section data-markdown><script type="text/template">
+## What we learned
+
+1. Creating a Wasm interpreter is *easy*
+</script></section>
+
+<section data-markdown><script type="text/template">
+## What we learned
+
+1. Creating a Wasm interpreter is *easy*
+2. Creating a 100% correct interpreter is *hard*
+</script></section>
+
+<section data-markdown><script type="text/template">
+## What we learned
+
+1. Creating a Wasm interpreter is *easy*
+2. Creating a 100% correct interpreter is *hard*
+3. Making sure it is also fast is *really hard*
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Thanks!
+
+Check out [github.com/wasmx/fizzy](htps://github.com/wasmx/fizzy)!
+
+The Fizzy Team:
+- Andrei Maiboroda [@gumb0](https://github.com/gumb0)
+- Paweł Bylica [@chfast](https://github.com/chfast)
+- and myself, Alex Beregszaszi [@axic](https://github.com/axic)
+- and other contributors
+</script></section>
+
+			</div>
+		</div>
+
+		<script src="../reveal.js-3.9.2/js/reveal.js"></script>
+
+		<script>
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: false,
+				progress: true,
+				history: true,
+				center: false,
+
+				transition: 'none', // none/fade/slide/convex/concave/zoom
+
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: '../reveal.js-3.9.2/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: '../reveal.js-3.9.2/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: '../reveal.js-3.9.2/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: '../../highlightjs-solidity/solidity.js', async: true, callback: function() { hljs.registerLanguage('solidity', window.hljsDefineSolidity); } },
+					{ src: '../reveal.js-3.9.2/plugin/zoom-js/zoom.js', async: true },
+					{ src: '../reveal.js-3.9.2/plugin/notes/notes.js', async: true }
+				]
+			});
+
+			var showHideHeader = function() {
+				if (Reveal.isFirstSlide() || Reveal.isOverview()) {
+					document.getElementById("header").style = "display: none;";
+				} else {
+					document.getElementById("header").style = "display: block;";
+				}
+			};
+			Reveal.addEventListener('ready', showHideHeader);
+			Reveal.addEventListener('slidechanged', showHideHeader);
+			Reveal.addEventListener('overviewshown', showHideHeader);
+			Reveal.addEventListener('overviewhidden', showHideHeader);
+		</script>
+
+	</body>
+</html>
