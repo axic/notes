@@ -1,0 +1,629 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>The future of EVM: EVM Object Format</title>
+
+		<meta name="author" content="Paweł Bylica & Alex Beregszaszi">
+
+		<link rel="stylesheet" href="../reveal.js-3.9.2/css/reset.css">
+		<link rel="stylesheet" href="../reveal.js-3.9.2/css/reveal.css">
+		<link rel="stylesheet" href="../reveal.js-3.9.2/css/theme/simple.css" id="theme">
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="../reveal.js-3.9.2/lib/css/zenburn.css">
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? '../reveal.js-3.9.2/css/print/pdf.css' : '../reveal.js-3.9.2/css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+<style type="text/css">
+@font-face {
+	font-family: PTSans;
+	src: url('./pt-sans-regular.woff') format('woff');
+	font-weight: normal;
+	font-style: normal;
+}
+body, .reveal {
+    font-family: PTSans, Arial, sans-serif;
+    font-size: 34px;
+}
+.reveal .slides {
+	text-align: left;
+}
+.reveal pre {
+  width: inherit;
+}
+.reveal table th, .reveal table td {
+    border-bottom: none;
+}
+.reveal h1, .reveal h2, .reveal h3, .reveal h4, .reveal h5, .reveal h6 {
+	text-align: center;
+	text-transform: none;
+	font-family: PTSans, Arial, sans-serif;
+	font-weight: bold;
+}
+p { text-align: left; }
+body {
+	background-color: #e6e7ecff;
+}
+
+#header-left {
+	position: absolute;
+	top: 0%;
+	left: 0%;
+	padding: 10px;
+}
+#header-right {
+	position: absolute;
+	top: 0%;
+	right: 0%;
+	padding: 10px;
+}
+#footer-left {
+	position: absolute;
+	bottom: 0%;
+	left: 0%;
+	padding: 20px;
+}
+
+#footer-center {
+	position: fixed;
+	left: 50%;
+	bottom: 0%;
+	transform: translate(-50%, 0);
+	margin: 0 auto;
+	padding: 40px;
+}
+#footer-right {
+	position: absolute;
+	bottom: 0%;
+	right: 0%;
+	padding: 40px;
+	padding-right: 120px;
+}
+
+.reveal section img {
+	border: none;
+	box-shadow: none;
+}
+
+.reveal table {
+  margin: auto;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.reveal table th {
+  font-weight: bold;
+}
+
+.reveal table th,
+.reveal table td {
+  text-align: left;
+  padding: 0.2em 0.5em 0.2em 0.5em;
+  border-bottom: 1px solid;
+}
+
+.reveal pre {
+  font-size: 80%;
+  background-color: white;
+}
+</style>
+
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+    <div id="header" style="display: none;">
+        <div id="header-left"></div>
+        <div id="header-right"></div>
+        <div id="footer-left"></div>
+        <div id="footer-center"><small>EVM Object Format (EOF)</small></div>
+        <div id="footer-right"></div>
+    </div>
+
+			<div class="slides">
+
+
+<section>
+<div style="position: fixed; top: 50px; left: 0px;"><b></b></div>
+<div style="position: fixed; top: 100px; left: 45%; margin-left: -240px; font-size: 130%; background-color: #fce96a;">The future of EVM</div>
+<div style="position: fixed; top: 250px; left: 65%; margin-left: -240px; font-size: 130%; background-color: #fce96a;">EVM Object Format</div>
+<div style="position: fixed; top: 550px; right: -0px;"><b>Paweł Bylica & Alex Beregszaszi</b></div>
+<div style="position: fixed; top: 620px; right: -0px;"><small><a href="https://twitter.com/chfast">twitter.com/chfast</a> – <a href="https://twitter.com/alexberegszaszi">twitter.com/alexberegszaszi</a></small><div>
+<div style="position: fixed; top: 650px; right: -0px;"><small><a href="https://github.com/chfast">github.com/chfast</a> – <a href="https://github.com/axic">github.com/axic</a></small></div>
+</section>
+
+<section data-markdown><script type="text/template">
+## Who are we?
+
+- Ipsilon team @ EF (previously called Ewasm)
+- Focus: improvements and analysis for execution (EVM)
+
+Publishing on
+- [notes.ethereum.org/@ipsilon](https://notes.ethereum.org/@ipsilon)
+- and [github.com/ipsilon](https://github.com/ipsilon)
+</script></section>
+
+<section data-markdown><script type="text/template">
+## What is cool about the EVM?
+
+*Super simple:* Every byte is an instruction.
+</script></section>
+
+<section data-markdown><script type="text/template">
+## What is bad about the EVM?
+
+*Wrongly simplified:* Every byte is an instruction.
+
+... but we also have (push)data bytes
+
+... and various rules
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Issue 1: New instructions
+
+- Any byte can exist in deployed contracts
+- Using an unassigned instruction results in a failure of execution
+- Introducing a new instruction means change of behavior for such contracts
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Issue 2: Data bytes
+
+- The `PUSH` instructions have an immediate data
+- These data bytes *can not* be executed
+- This means `JUMP`ing to such offset is invalid
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Issue 2: Data bytes
+
+- The `PUSH` instructions have an immediate data
+- These data bytes *can not* be executed
+- This means `JUMP`ing to such offset is invalid
+
+Challenging to do this at runtime (i.e. backwards jumps).
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Issue 2: Data bytes
+
+- The `PUSH` instructions have an immediate data
+- These data bytes *can not* be executed
+- This means `JUMP`ing to such offset is invalid
+
+Challenging to do this at runtime (i.e. backwards jumps).
+
+Mostly done upfront in a process called *jumpdest analysis*.
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Jumpdest analysis explained
+
+- `JUMPDEST` (`0x5b`) marks a valid jump destination
+- Not every `0x5b` byte is a `JUMPDEST`
+- `PUSH` immediate bytes must be omitted
+
+**Goal**: Collect valid `JUMPDEST` offsets before execution
+
+<small>Note: JIT/AOT compilation</small>
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Problems with jumpdest analysis
+
+1. Need to be aware of new instructions with immediates
+2. Is costly in terms of CPU time
+3. Is repeated every time code is executed (caveat)
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Issue 3: "Data sections"
+
+Contracts frequently contain trailing data:
+1. Contract creation code has the runtime code at the end
+2. Solidity places "metadata" and other large constants there
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Issue 3: "Data sections"
+
+Solidity metadata is useful for contract verification (reproducible builds) and to aid interaction (by acquiring an ABI, documentation, etc.)
+
+Some tools and frameworks strip this data, because it interferes with their analysis 😢
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Issue 3: "Data sections"
+
+This data can interfere with jumpdest analysis:
+1. It can be a lot of data to analyse
+2. It is still possible to jump there, breaking the boundary of code and data
+</script></section>
+
+<section data-markdown><script type="text/template">
+## The Solution
+
+**EVM Object Format (EOF)**
+
+Goals:
+- Separate code and data
+- Code validation
+- Extensibility
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Specification
+
+[EIP-3540: EVM Object Format (EOF) v1](https://eips.ethereum.org/EIPS/eip-3540)
+
+Layout:
+```
+magic, version, 
+(section_kind, section_size)+, 0, 
+<section contents>
+```
+</script></section>
+
+<section data-markdown><script type="text/template">
+## EOF example
+
+<pre>
+EF000101000B02000400 60048060156000396000F3 600080FD
+</pre>
+</script></section>
+
+<section data-markdown><script type="text/template">
+## EOF example
+
+<pre>
+<span style="color:red">EF00</span>0101000B02000400 60048060156000396000F3 600080FD
+</pre>
+
+These bytes are the magic.
+</script></section>
+
+<section data-markdown><script type="text/template">
+## EOF example
+
+<pre>
+EF00<span style="color:red">01</span>01000B02000400 60048060156000396000F3 600080FD
+</pre>
+
+The version number, which is set at 1 currently.
+</script></section>
+
+<section data-markdown><script type="text/template">
+## EOF example
+
+<pre>
+EF0001<span style="color:red">01000B</span>02000400 60048060156000396000F3 600080FD
+</pre>
+
+The first section, with kind `01` meaning *code*, and length of `0xB` (11).
+</script></section>
+
+<section data-markdown><script type="text/template">
+## EOF example
+
+<pre>
+EF000101000B<span style="color:red">020004</span>00 60048060156000396000F3 600080FD
+</pre>
+
+The second section, with kind `02` meaning *data*, and length of `0x4`.
+</script></section>
+
+<section data-markdown><script type="text/template">
+## EOF example
+
+<pre>
+EF000101000B020004<span style="color:red">00</span> 60048060156000396000F3 600080FD
+</pre>
+
+The terminator for the header (i.e. section kind 0).
+</script></section>
+
+<section data-markdown><script type="text/template">
+## EOF example
+
+<pre>
+EF000101000B02000400 <span style="color:red">60048060156000396000F3</span> 600080FD
+</pre>
+
+This is the content of the first section (*the code*):
+
+```
+PUSH 4
+DUP1
+# The offset from the beginning to the data section.
+PUSH 21
+PUSH 0
+CODECOPY
+PUSH 0
+RETURN
+```
+</script></section>
+
+<section data-markdown><script type="text/template">
+## EOF example
+
+<pre>
+EF000101000B02000400 60048060156000396000F3 <span style="color:red">600080FD</span>
+</pre>
+
+This is the content of the second section (*the data*):
+
+```
+PUSH 0
+DUP1
+REVERT
+```
+
+In our case we actually encoded the runtime code here.
+</script></section>
+
+<section data-markdown><script type="text/template">
+## EOF example
+
+<pre>
+EF000101000B02000400 60048060156000396000F3 <span style="color:red">600080FD</span>
+</pre>
+
+This is the content of the second section (*the data*):
+
+```
+PUSH 0
+DUP1
+REVERT
+```
+
+In our case we actually encoded the runtime code here.
+
+**Can you spot a bug here?**
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Enabling EOF on a network
+
+- Any existing EVM blockchain
+- *Requirement*: Deployed code with EOF prefix **must** be valid
+- *Solution*: Use previously unused bytecode prefix
+</script></section>
+
+<section data-markdown><script type="text/template">
+## EIP-3541
+
+- [EIP-3541](https://eips.ethereum.org/EIPS/eip-3541): Reject new contract code starting with the 0xEF byte
+- Activated in [London](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/london.md) upgrade (August 2021)
+- Freezes "unused prefix" search space
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Already deployed EF-prefix bytecode
+
+- Mainnet
+    - `EF F0 9f918bf09f9fa9`
+    - `EF` _(2x)_
+- Ropsten, Rinkeby, Goerli, Kovan
+    - None
+</script></section>
+
+<section data-markdown><script type="text/template">
+## EOF prefix status
+
+| `EF` | `EF 00` |
+| ------------------ | ---------- |
+| - added&nbsp;complexity | - simple   |
+| - the shortest     | - longer   |
+|                    | - selected for EIP-3540 |
+</script></section>
+
+<section data-markdown><script type="text/template">
+### Prefix: `EF`
+
+```python
+known_versions = [0x01]  # version 0xf0 must never be here
+
+def is_eof(code):
+    return (len(code) >= 2 &&
+            code[0] == 0xEF &&
+            code[1] in known_versions)
+
+def get_eof_version(code):
+    assert is_eof(code)
+    return code[1]
+```
+</script></section>
+
+<section data-markdown><script type="text/template">
+### Prefix: `EF 00`
+
+```python
+def is_eof(code):
+    return (len(code) >= 2 &&
+            code[0] == 0xEF &&
+            code[1] == 0x00)
+
+def get_eof_version(code):
+    assert is_eof(code)
+    return code[2]  # SHOULD be safe for deployed code.
+```
+</script></section>
+
+<section data-markdown><script type="text/template">
+## EOF Code Validation
+
+- Code section may be additionally validated
+- Validation rules may be changed or extended
+
+**Why?**
+
+- Do not deploy bad code
+- More efficient execution
+- Easier rollout of new EVM features
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Validation prodecure
+
+Applies to contract creation: create tx, `CREATE`, `CREATE2`
+
+1. Is _initcode_ valid?
+2. NO: contract creation failure
+3. Is _code_ valid?
+4. NO: contract creation failure
+</script></section>
+
+<section data-markdown><script type="text/template">
+## EOF example
+
+<pre>
+EF000101000B02000400 60048060156000396000F3 <span style="color:red">600080FD</span>
+</pre>
+
+This is the content of the second section (*the data*):
+
+```
+PUSH 0
+DUP1
+REVERT
+```
+
+In our case we actually encoded the runtime code here.
+
+**Can you spot a bug here?**
+</script></section>
+
+<section data-markdown><script type="text/template">
+## EOF example
+
+<pre>
+EF000101<span style="color:orange">000B</span>02000B00 <span style="color:orange">600B</span>8060156000396000F3 <span style="color:red">EF000101000400 600080FD</span>
+</pre>
+
+This is the content of the second section (*the data*):
+
+```
+PUSH 0
+DUP1
+REVERT
+```
+
+In our case we actually encoded the runtime code here.
+
+**The runtime code must also be EOF formatted.**
+</script></section>
+
+<section data-markdown><script type="text/template">
+### Code Validation (EIP-3670)
+
+Additional validation rules:
+
+1. Undefined opcodes are not present
+2. PUSH data within code section (no implicit zero bytes)
+3. Bonus: code ends with a terminator instruction
+
+(More potential rules to come)
+</script></section>
+
+<section data-markdown><script type="text/template">
+### Code Validation helps Interpreters
+
+1. Single stop condition:
+    - terminator instruction
+    - no out-of-code check
+2. Efficient PUSH data loads
+    - no out-of-code check
+3. **~7%** performance improvement in evmone/Baseline [#295](https://github.com/ethereum/evmone/pull/295)
+</script></section>
+
+<section data-markdown><script type="text/template">
+### [EIP-4200](https://eips.ethereum.org/EIPS/eip-4200): Static relative jumps
+
+- Reduces "dynamic" JUMPs usage
+- Reduces JUMPDESTs usage
+- May be combined with functions/subroutines to eliminate "dynamic" JUMPs and JUMPDESTs
+</script></section>
+
+<section data-markdown><script type="text/template">
+### EIP-3074 (AUTH)
+
+EOF helps in enabling *account abstraction*.
+
+See the [validation focused smart contracts wallets](https://ethereum-magicians.org/t/validation-focused-smart-contract-wallets/6603) proposal.
+
+It augments EIP-3074 with EOF.
+</script></section>
+
+<section data-markdown><script type="text/template">
+### Wen EOF?!
+
+Hopefully first feature upgrade after The Merge.
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Thanks!
+
+Check out [Everything about the EVM Object Format](https://notes.ethereum.org/@ipsilon/evm-object-format-overview) for *more* details 😂
+
+Talk to us:
+- Andrei Maiboroda [@gumb0](https://github.com/gumb0)
+- Paweł Bylica [@chfast](https://github.com/chfast)
+- Alex Beregszaszi [@axic](https://github.com/axic)
+</script></section>
+
+			</div>
+		</div>
+
+		<script src="../reveal.js-3.9.2/js/reveal.js"></script>
+
+		<script>
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: false,
+				progress: true,
+				history: true,
+				center: false,
+
+				transition: 'none', // none/fade/slide/convex/concave/zoom
+
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: '../reveal.js-3.9.2/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: '../reveal.js-3.9.2/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: '../reveal.js-3.9.2/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: '../../highlightjs-solidity/solidity.js', async: true, callback: function() { hljs.registerLanguage('solidity', window.hljsDefineSolidity); } },
+					{ src: '../reveal.js-3.9.2/plugin/zoom-js/zoom.js', async: true },
+					{ src: '../reveal.js-3.9.2/plugin/notes/notes.js', async: true }
+				]
+			});
+
+			var showHideHeader = function() {
+				if (Reveal.isFirstSlide() || Reveal.isOverview()) {
+					document.getElementById("header").style = "display: none;";
+				} else {
+					document.getElementById("header").style = "display: block;";
+				}
+			};
+			Reveal.addEventListener('ready', showHideHeader);
+			Reveal.addEventListener('slidechanged', showHideHeader);
+			Reveal.addEventListener('overviewshown', showHideHeader);
+			Reveal.addEventListener('overviewhidden', showHideHeader);
+		</script>
+
+	</body>
+</html>
